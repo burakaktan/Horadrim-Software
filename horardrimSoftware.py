@@ -3,11 +3,23 @@
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import sys
+import os
+from ddl import *
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+def extend_to(l,s):
+    return s + (l - len(s)) * '$'
 
+def add_new_page_to_information_schema(infor):
+    infor.write("08002384".encode("ascii"))
+    for j in range(8):
+        infor.write(("0" + 20 * '$' + 276 * '$').encode("ascii"))
+
+def remove_dollar(s):
+    ns = ""
+    for ch in s:
+        if ch != '$':
+            ns += ch
+    return ns
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -15,29 +27,25 @@ if __name__ == '__main__':
     output_file_name = sys.argv[2]
     input_file = open(input_file_name, 'r')
     input_lines = input_file.readlines()
+    #create information_schema table if not exist
+    if not os.path.exists('information_schema.txt'):
+        infor = open(f"information_schema.txt", "wb+")
+        add_new_page_to_information_schema(infor)
+        infor.close()
+
     for inp in input_lines:
         inp = inp.split()
         # if query is DDL
         if inp[1] == 'type':
             if inp[0] == 'create':
-                table_name = inp[2]
-                f = open(f"{table_name}_1.txt", "wb")
-                # 3 pages per file
-                for i in range(3):
-                    #page header
-                    # 09 --> number of records in this page
-                    # 00 --> number of active records (initially 0)
-                    # 2195 --> number of bytes in the page
-                    f.write("09002195")
-                    # 9 records per page
-                    for j in range(9):
-                        # 0 --> this record is initially inactive
-                        # 12 --> there are 12 fields in each record.
-                        # 240*$ --> all records are filled with an exceptional character
-                        f.write("012" + 240*'$')
+                create_type(inp)
             if inp[0] == 'delete':
+                delete_type(inp)
             if inp[0] == 'list':
+                list_type(inp, output_file_name)
+
         # if query is DML
         else :
+            pass
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
