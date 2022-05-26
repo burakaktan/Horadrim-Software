@@ -45,8 +45,8 @@ if __name__ == '__main__':
             if inp[0] == 'create':
                 create_record(inp)
             if inp[0] == 'delete':
-                delete_record(inp)
+                pass
             if inp[0] == 'list':
-                list_record(inp,output_file_name)
+                pass
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
