@@ -47,6 +47,6 @@ if __name__ == '__main__':
             if inp[0] == 'delete':
                 delete_record(inp)
             if inp[0] == 'list':
-                list_record(inp)
+                list_record(inp,output_file_name)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
