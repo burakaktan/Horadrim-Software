@@ -1,4 +1,4 @@
-from main import *
+from horadrimSoftware import *
 
 catalog_page_header_size = 2 + 2 + 4 # record_number + active_record_number + total_size
 catalog_page_record_number = 8
