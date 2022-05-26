@@ -5,14 +5,10 @@
 import sys
 import os
 from ddl import *
+from dml import *
 
 def extend_to(l,s):
     return s + (l - len(s)) * '$'
-
-def add_new_page_to_information_schema(infor):
-    infor.write("08002384".encode("ascii"))
-    for j in range(8):
-        infor.write(("0" + 20 * '$' + 276 * '$').encode("ascii"))
 
 def remove_dollar(s):
     ns = ""
@@ -46,6 +42,11 @@ if __name__ == '__main__':
 
         # if query is DML
         else :
-            pass
+            if inp[0] == 'create':
+                create_record(inp)
+            if inp[0] == 'delete':
+                pass
+            if inp[0] == 'list':
+                pass
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
