@@ -1,6 +1,6 @@
 from horadrimSoftware import *
-from bplustree.tree import BPlusTree
-from bplustree.serializer import StrSerializer
+from bplustree import BPlusTree
+from bplustree import StrSerializer
 from ddl import *
 import os
 
