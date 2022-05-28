@@ -7,4 +7,4 @@ Run these commands:
 
 pip install bplustree
 
-python horadrimSoftware.py input_file_name output_file_name
+python3 src/horadrimSoftware.py inputFile outputFile
