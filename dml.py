@@ -1,9 +1,3 @@
-"""
-TODO:
-    - print the logs
-    - look at the report
-"""
-
 from horadrimSoftware import *
 from bplustree.tree import BPlusTree
 from bplustree.serializer import StrSerializer
@@ -112,147 +106,200 @@ def check_empty(file_name):
 
 
 def create_record(inp):
-    table_name = inp[2]
-    table_name_extended = extend_to(20, table_name)
-    mx = 1
-    # file_name and byte where we added the record
-    added_file = ""
-    added_byte = 0
-    related_files = getFileList(table_name)
-    for file in related_files:
-        num_as_str = ""
-        for ch in file:
-            if '9' >= ch >= '0':
-                num_as_str += ch
-        mx = max(mx, int(num_as_str))
-    result = -1
-    for file_name in related_files:
-        result = add_to_file(file_name, inp)
-        if result != -1:
-            added_file = file_name
+    try:
+        table_name = inp[2]
+        table_name_extended = extend_to(20, table_name)
+        mx = 1
+        # file_name and byte where we added the record
+        added_file = ""
+        added_byte = 0
+        related_files = getFileList(table_name)
+        for file in related_files:
+            num_as_str = ""
+            for ch in file:
+                if '9' >= ch >= '0':
+                    num_as_str += ch
+            mx = max(mx, int(num_as_str))
+        result = -1
+        for file_name in related_files:
+            result = add_to_file(file_name, inp)
+            if result != -1:
+                added_file = file_name
+                added_byte = result
+                break
+        if result == -1:
+            new_file_name = table_name+"_"+str(mx)+".txt"
+            create_fill_file(new_file_name)
+            result = add_to_file(new_file_name, inp)
+            added_file = new_file_name
             added_byte = result
-            break
-    if result == -1:
-        new_file_name = table_name+"_"+str(mx)+".txt"
-        create_fill_file(new_file_name)
-        result = add_to_file(new_file_name, inp)
-        added_file = new_file_name
-        added_byte = result
-    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer = StrSerializer(), order = 50)
-    pk = inp[2+get_primary_key(table_name)]
-    print("pk is:", pk)
-    tree[pk] = ("1" + added_file + "," + str(added_byte)).encode("ascii")
-    tree.close()
+        if not os.path.exists("bp_"+table_name+".txt"):
+            print("olmayan tabloya insert")
+            return False
+        tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer = StrSerializer(), order = 50)
+        pk = inp[2+get_primary_key(table_name)]
+        if tree.get(pk):
+            tree.close()
+            return False
+        print("pk is:", pk)
+        tree[pk] = ("1" + added_file + "," + str(added_byte)).encode("ascii")
+        tree.close()
+        return True
+    except:
+        return False
 
 
 def list_record(inp, output_file_name):
-    table_name = inp[2]
-    table_name_extended = extend_to(20, table_name)
-    outputs = []
-    related_files = getFileList(table_name)
-    pk = get_primary_key(table_name)
-    for filename in related_files:
-        infor = open(filename, "rb+")
-        page_data = infor.read(page_size).decode("ascii")
-        cursor = page_header_size
-        for i in range(records_per_page):
-            if page_data[cursor] == '1':
-                sub_ans = get_data_from_record(page_data[cursor:cursor+record_size])
-                sub_key = sub_ans.split(" ")[pk-1]
-                print("sub key is: ",sub_key)
-                outputs.append([sub_key,sub_ans])
-            cursor += record_size
-        infor.close()
-    out = open(output_file_name, "a")
-    outputs.sort()
-    for o in outputs:
-        out.write(o[1]+"\n")
-    out.close()
-
+    try:
+        table_name = inp[2]
+        table_name_extended = extend_to(20, table_name)
+        outputs = []
+        related_files = getFileList(table_name)
+        pk = get_primary_key(table_name)
+        for filename in related_files:
+            infor = open(filename, "rb+")
+            page_data = infor.read(page_size).decode("ascii")
+            cursor = page_header_size
+            for i in range(records_per_page):
+                if page_data[cursor] == '1':
+                    sub_ans = get_data_from_record(page_data[cursor:cursor+record_size])
+                    sub_key = sub_ans.split(" ")[pk-1]
+                    print("sub key is: ",sub_key)
+                    outputs.append([sub_key,sub_ans])
+                cursor += record_size
+            infor.close()
+        out = open(output_file_name, "a")
+        outputs.sort()
+        for o in outputs:
+            out.write(o[1]+"\n")
+        out.close()
+        return len(outputs) != 0
+    except:
+        return False
 
 def update_record(inp):
-    table_name = inp[2]
-    pk = inp[3]
-    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(),order = 50)
-    storage = tree.get(str(pk)).decode("utf-8")[1:].split(",")
-    infor = open(storage[0], "rb+")
-    infor.seek(int(storage[1]) + record_header_size)
-    for field in inp[4:]:
-        infor.write(extend_to(20, field).encode("ascii"))
-    infor.close()
-    tree.close()
-
+    try:
+        table_name = inp[2]
+        pk = inp[3]
+        if not os.path.exists("bp_"+table_name+".txt"):
+            print("olmayan tabloya update")
+            return False
+        tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(),order = 50)
+        if not tree.get(pk):
+            tree.close()
+            return False
+        storage = tree.get(str(pk)).decode("utf-8")[1:].split(",")
+        infor = open(storage[0], "rb+")
+        infor.seek(int(storage[1]) + record_header_size)
+        for field in inp[4:]:
+            infor.write(extend_to(20, field).encode("ascii"))
+        infor.close()
+        tree.close()
+        return True
+    except:
+        return False
 
 def search_record(inp, output_file_name):
-    table_name = inp[2]
-    pk = inp[3]
-    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(), order = 50)
-    storage = tree.get(str(pk)).decode("utf-8")[1:].split(",")
-    tree.close()
+    try:
+        table_name = inp[2]
+        pk = inp[3]
+        tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(), order = 50)
+        if not tree.get(pk):
+            tree.close()
+            return False
+        if not tree.get(str(pk)).decode("utf-8")[0] == '1':
+            tree.close()
+            return False
+        storage = tree.get(str(pk)).decode("utf-8")[1:].split(",")
+        tree.close()
+        infor = open(storage[0], "rb+")
+        out = open(output_file_name, "a")
+        infor.seek(int(storage[1]))
+        data = infor.read(record_size).decode("ascii")
+        infor.close()
 
-    infor = open(storage[0], "rb+")
-    out = open(output_file_name, "a")
-    infor.seek(int(storage[1]))
-    data = infor.read(record_size).decode("ascii")
-    infor.close()
-
-    out.write(get_data_from_record(data) + "\n")
-    out.close()
+        out.write(get_data_from_record(data) + "\n")
+        out.close()
+        return True
+    except:
+        return False
 
 
 def filter_record(inp, output_file_name):
-    table_name = inp[2]
-    pk = inp[3]
-    cond = inp[4]
-    operand = inp[5]
-    outputs = []
+    try:
+        table_name = inp[2]
+        pk = inp[3]
+        cond = inp[4]
+        operand = inp[5]
+        outputs = []
 
-    pk_type = get_primary_key_type(table_name)
-    print("pk type is: ", pk_type)
-    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(), order = 50)
-    for key, value in tree.items():
-        _key = key
-        if pk_type == "int":
-            operand = int(operand)
-            _key = int(_key)
-        holds = False
-        if cond == '<' and _key < operand:
-            holds = True
-        if cond == '>' and _key > operand:
-            holds = True
-        if cond == '=' and _key == operand:
-            holds = True
-        if holds:
-            _value = value[1:]
-            storage = _value.decode("utf-8").split(",")
-            infor = open(storage[0], "rb+")
+        pk_type = get_primary_key_type(table_name)
+        print("pk type is: ", pk_type)
+        tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(), order = 50)
+        for key, value in tree.items():
+            _key = key
+            if pk_type == "int":
+                operand = int(operand)
+                _key = int(_key)
+            holds = False
+            if cond == '<' and _key < operand:
+                holds = True
+            if cond == '>' and _key > operand:
+                holds = True
+            if cond == '=' and _key == operand:
+                holds = True
+            if holds:
+                _value = value[1:]
+                storage = _value.decode("utf-8").split(",")
+                infor = open(storage[0], "rb+")
 
-            infor.seek(int(storage[1]))
-            data = infor.read(record_size).decode("ascii")
-            infor.close()
-            outputs.append([_key, get_data_from_record(data)])
-    tree.close()
-    out = open(output_file_name, "a")
-    outputs.sort()
-    for i in range(len(outputs)):
-        out.write(outputs[i][1] + "\n")
-    out.close()
+                infor.seek(int(storage[1]))
+                data = infor.read(record_size).decode("ascii")
+                infor.close()
+                outputs.append([_key, get_data_from_record(data)])
+        tree.close()
+        out = open(output_file_name, "a")
+        outputs.sort()
+        for i in range(len(outputs)):
+            out.write(outputs[i][1] + "\n")
+        out.close()
+        return len(outputs) != 0
+    except:
+        return False
+
 
 def delete_record(inp):
-    table_name = inp[2]
-    pk = inp[3]
-    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(), order = 50)
-    is_alive = tree.get(pk)[0]
-    storage = tree.get(pk).decode("utf-8")[1:].split(",")
-    tree[pk] = "0".encode("ascii")
-    tree.close()
-    infor = open(storage[0], "rb+")
-    infor.seek(int(storage[1]))
-    infor.write("0".encode("ascii"))
-    curr_page = int(storage[1])//page_size
-    infor.seek(curr_page*page_size+2)
-    no_active_records = int(infor.read(2).decode("ascii"))-1
-    infor.seek(infor.tell()-2)
-    infor.write(str(no_active_records).zfill(2).encode("ascii"))
-    infor.close()
-    check_empty(storage[0])
+    try:
+        table_name = inp[2]
+        pk = inp[3]
+        if not os.path.exists("bp_"+table_name+".txt"):
+            return False
+        tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(), order = 50)
+        if not tree.get(pk):
+            tree.close()
+            return False
+        is_alive = tree.get(pk).decode("utf-8")[0]
+        if not is_alive:
+            tree.close()
+            return False
+        storage = tree.get(pk).decode("utf-8")[1:].split(",")
+
+        tree[pk] = "0".encode("ascii")
+        tree.close()
+        infor = open(storage[0], "rb+")
+        infor.seek(int(storage[1]))
+        infor.write("0".encode("ascii"))
+        curr_page = int(storage[1])//page_size
+        infor.seek(curr_page*page_size+2)
+        no_active_records = int(infor.read(2).decode("ascii"))-1
+        infor.seek(infor.tell()-2)
+        infor.write(str(no_active_records).zfill(2).encode("ascii"))
+        infor.close()
+        check_empty(storage[0])
+        return True
+    except:
+        return False
+
+
+
+
