@@ -2,10 +2,10 @@
 
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-from src.ddl import *
-from src.dml import *
-from bplustree.tree import BPlusTree
-from bplustree.serializer import StrSerializer
+from ddl import *
+from dml import *
+from bplustree import BPlusTree
+from bplustree import StrSerializer
 import os
 import sys
 import time
