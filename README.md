@@ -3,7 +3,7 @@
 
 ## How to run?
 
-Run this command:
+Run these commands:
 
 pip install bplustree
 
