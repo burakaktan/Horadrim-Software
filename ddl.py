@@ -38,6 +38,13 @@ def create_type(inp):
     table_name_extended = extend_to(max_table_name_length, table_name)
     number_of_fields = inp[3]
     primary_key = inp[4]
+
+    # create edilen her file icin B+ tree olusturuyoruz, eger B+ tree'si onceden varsa yeniden create etmiyoruz
+    if os.path.exists("./bp_" + table_name + ".txt"):
+        print("onceden vardi, o yuzden bir daha uretmedik")
+        return
+    tree = BPlusTree("./bp_" + table_name + ".txt", key_size=20, serializer=StrSerializer(), order = 50)
+    tree.close()
     # add to information schema
     written = False
     infor = open(f"information_schema.txt", "rb+")
@@ -82,7 +89,7 @@ def create_type(inp):
 
 def list_type(inp, output_file_name):
     infor = open("information_schema.txt", "rb+")
-    out = open(output_file_name, "a")
+    outputs = []
     while True:
         data = infor.read(catalog_page_size).decode("ascii")
         if len(data) == 0:
@@ -93,8 +100,13 @@ def list_type(inp, output_file_name):
             if data[cursor] == '1':
                 sub_ans = remove_dollar(data[(cursor + 1): (cursor + 1 + max_table_name_length)])
                 cursor += catalog_record_size
-                out.write(sub_ans + '\n')
+                outputs.append(sub_ans)
     infor.close()
+    out = open(output_file_name, "a")
+    outputs.sort()
+    for o in outputs:
+        out.write(o+"\n")
+    out.close()
 
 
 def delete_type(inp):
@@ -122,7 +134,7 @@ def delete_type(inp):
     for file in all_files:
         if ".txt" in file and file.find(name+"_") == 0:
             related_files.append(file)
-        if file.find("bp_"+name+".txt") != -1:
+        if file.find("bp_"+name+".txt") == 0:
             related_files.append(file)
     return related_files
     for filename in related_files:
@@ -141,5 +153,26 @@ def get_primary_key(table_name):
             if data[cursor] == '1' and table_name == remove_dollar(data[(cursor+1):(cursor+1+max_table_name_length)]):
                 infor.close()
                 return int(data[cursor+1+max_table_name_length:cursor+1+max_table_name_length+2])
+            cursor += catalog_record_size
+    infor.close()
+    return -1
+
+def get_primary_key_type(table_name):
+    infor = open("information_schema.txt", "rb+")
+    while True:
+        data = infor.read(catalog_page_size).decode("ascii")
+        if len(data) == 0:
+            break
+        cursor = catalog_page_header_size
+        for i in range(catalog_page_record_number):
+            # if valid bit is 1 and table is the table we search
+            if data[cursor] == '1' and table_name == remove_dollar(data[(cursor+1):(cursor+1+max_table_name_length)]):
+                infor.close()
+                cursor += 21
+                place = int(data[cursor:cursor+2]) - 1
+                cursor += 2
+                cursor += 23*place+20
+                return data[cursor:cursor+3]
+            cursor += catalog_record_size
     infor.close()
     return -1
