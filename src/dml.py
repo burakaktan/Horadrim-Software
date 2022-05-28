@@ -134,14 +134,12 @@ def create_record(inp):
             added_file = new_file_name
             added_byte = result
         if not os.path.exists("bp_"+table_name+".txt"):
-            print("olmayan tabloya insert")
             return False
         tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer = StrSerializer(), order = 50)
         pk = inp[2+get_primary_key(table_name)]
         if tree.get(pk):
             tree.close()
             return False
-        print("pk is:", pk)
         tree[pk] = ("1" + added_file + "," + str(added_byte)).encode("ascii")
         tree.close()
         return True
@@ -164,7 +162,6 @@ def list_record(inp, output_file_name):
                 if page_data[cursor] == '1':
                     sub_ans = get_data_from_record(page_data[cursor:cursor+record_size])
                     sub_key = sub_ans.split(" ")[pk-1]
-                    print("sub key is: ",sub_key)
                     outputs.append([sub_key,sub_ans])
                 cursor += record_size
             infor.close()
@@ -182,7 +179,6 @@ def update_record(inp):
         table_name = inp[2]
         pk = inp[3]
         if not os.path.exists("bp_"+table_name+".txt"):
-            print("olmayan tabloya update")
             return False
         tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(),order = 50)
         if not tree.get(pk):
@@ -234,7 +230,6 @@ def filter_record(inp, output_file_name):
         outputs = []
 
         pk_type = get_primary_key_type(table_name)
-        print("pk type is: ", pk_type)
         tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(), order = 50)
         for key, value in tree.items():
             _key = key
