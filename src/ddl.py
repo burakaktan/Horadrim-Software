@@ -42,7 +42,6 @@ def create_type(inp):
 
         # create edilen her file icin B+ tree olusturuyoruz, eger B+ tree'si onceden varsa yeniden create etmiyoruz
         if os.path.exists("./bp_" + table_name + ".txt"):
-            print("onceden vardi, o yuzden bir daha uretmedik")
             return False
         tree = BPlusTree("./bp_" + table_name + ".txt", key_size=20, serializer=StrSerializer(), order = 50)
         tree.close()
