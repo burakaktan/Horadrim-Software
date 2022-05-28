@@ -19,12 +19,17 @@ def get_ocurrence():
 def extend_to(l, s):
     return s + (l - len(s)) * '$'
 
-"""
+
 def log(_inp, result):
-    infor = open("horadrim-Log.csv", "a")
-    infor.write(get_ocurrence(), _inp, result, sep=",")
+    if _inp[-1] == '\n':
+        _inp = _inp[:-1]
+    infor = open("horadrimLog.csv", "a")
+    status = "success"
+    if not result:
+        status = "failure"
+    infor.write(str(get_ocurrence()) + "," + _inp + "," + status + "\n")
     infor.close()
-"""
+
 
 def remove_dollar(s):
     ns = ""
@@ -57,22 +62,22 @@ if __name__ == '__main__':
         # if query is DDL
         if inp[1] == 'type':
             if inp[0] == 'create':
-                create_type(inp)
+                log(_inp, create_type(inp))
             if inp[0] == 'delete':
-                delete_type(inp)
+                log(_inp, delete_type(inp))
             if inp[0] == 'list':
-                list_type(inp, output_file_name)
+                log(_inp, list_type(inp, output_file_name))
 
         # if query is DML
         else :
             if inp[0] == 'create':
-                create_record(inp)
+                log(_inp, create_record(inp))
             if inp[0] == 'list':
-                list_record(inp, output_file_name)
+                log(_inp, list_record(inp, output_file_name))
             if inp[0] == 'update':
-                update_record(inp)
+                log(_inp, update_record(inp))
             if inp[0] == 'search':
-                search_record(inp, output_file_name)
+                log(_inp, search_record(inp, output_file_name))
             if inp[0] == 'filter':
                 new_inp = []
                 for i in range(len(inp)):
@@ -88,8 +93,8 @@ if __name__ == '__main__':
                         new_inp.append(yeni)
                     else:
                         new_inp.append(inp[i])
-                filter_record(new_inp, output_file_name)
+                log(_inp, filter_record(new_inp, output_file_name))
             if inp[0] == 'delete':
-                delete_record(inp)
+                log(_inp, delete_record(inp))
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
