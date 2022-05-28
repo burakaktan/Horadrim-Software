@@ -8,11 +8,23 @@ from bplustree.tree import BPlusTree
 from bplustree.serializer import StrSerializer
 import os
 import sys
+import time
+
+from src.dml import filter_record
+
+def get_ocurrence():
+    return int(time.time())
 
 
-def extend_to(l,s):
+def extend_to(l, s):
     return s + (l - len(s)) * '$'
 
+"""
+def log(_inp, result):
+    infor = open("horadrim-Log.csv", "a")
+    infor.write(get_ocurrence(), _inp, result, sep=",")
+    infor.close()
+"""
 
 def remove_dollar(s):
     ns = ""
@@ -39,8 +51,9 @@ if __name__ == '__main__':
         add_new_page_to_information_schema(infor)
         infor.close()
 
-    for inp in input_lines:
-        inp = inp.split()
+    for _inp in input_lines:
+        print("executing:", _inp)
+        inp = _inp.split()
         # if query is DDL
         if inp[1] == 'type':
             if inp[0] == 'create':
@@ -54,11 +67,29 @@ if __name__ == '__main__':
         else :
             if inp[0] == 'create':
                 create_record(inp)
-            if inp[0] == 'delete':
-                pass
             if inp[0] == 'list':
                 list_record(inp, output_file_name)
             if inp[0] == 'update':
                 update_record(inp)
+            if inp[0] == 'search':
+                search_record(inp, output_file_name)
+            if inp[0] == 'filter':
+                new_inp = []
+                for i in range(len(inp)):
+                    if "<" in inp[i] or ">" in inp[i] or "=" in inp[i]:
+                        yeni = ""
+                        for ch in inp[i]:
+                            if ch in "<>=":
+                                new_inp.append(yeni)
+                                new_inp.append(ch)
+                                yeni = ""
+                            else:
+                                yeni += ch
+                        new_inp.append(yeni)
+                    else:
+                        new_inp.append(inp[i])
+                filter_record(new_inp, output_file_name)
+            if inp[0] == 'delete':
+                delete_record(inp)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
