@@ -1,6 +1,5 @@
 """
 TODO:
-    - Sort the output
     - print the logs
     - look at the report
 """
@@ -24,7 +23,8 @@ record_body_size = max_field_number * max_field_length
 record_size = record_body_size + record_header_size
 page_size = page_header_size + records_per_page * record_size
 
-def extend_to(l,s):
+
+def extend_to(l, s):
     return s + (l - len(s)) * '$'
 
 
@@ -37,7 +37,7 @@ def remove_dollar(s):
 
 
 def create_fill_file(filename):
-    infor = open(filename,"w")
+    infor = open(filename, "w")
     infor.close()
     infor = open(filename, "rb+")
     for i in range(pages_per_file):
@@ -64,17 +64,17 @@ def add_to_file(filename, inp):
                     number_of_fields = len(inp)-3
                     write = "1" + str(number_of_fields).zfill(2)
                     for k in range(number_of_fields):
-                        write += extend_to(20, inp[3+k])
+                        write += extend_to(max_field_length, inp[3+k])
                     for k in range(12-number_of_fields):
                         write += max_field_length*'$'
                     infor.seek(infor.tell()-page_size+page_header_size+j*record_size)
                     to_return = infor.tell()
                     infor.write(write.encode("ascii"))
-
                     # change number of active records
                     infor.seek(i*page_size+2)
                     infor.write(str(active_records+1).zfill(2).encode("ascii"))
-                    break
+                    infor.close()
+                    return to_return
     infor.close()
     return to_return
 
@@ -138,32 +138,42 @@ def create_record(inp):
         result = add_to_file(new_file_name, inp)
         added_file = new_file_name
         added_byte = result
-    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer = StrSerializer())
-    pk = get_primary_key(table_name)
-    tree[str(inp[2+pk])] = ("1" + added_file + "," + str(added_byte)).encode("ascii")
+    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer = StrSerializer(), order = 50)
+    pk = inp[2+get_primary_key(table_name)]
+    print("pk is:", pk)
+    tree[pk] = ("1" + added_file + "," + str(added_byte)).encode("ascii")
     tree.close()
 
 
 def list_record(inp, output_file_name):
-    out = open(output_file_name, "a")
     table_name = inp[2]
     table_name_extended = extend_to(20, table_name)
+    outputs = []
     related_files = getFileList(table_name)
+    pk = get_primary_key(table_name)
     for filename in related_files:
         infor = open(filename, "rb+")
         page_data = infor.read(page_size).decode("ascii")
         cursor = page_header_size
         for i in range(records_per_page):
             if page_data[cursor] == '1':
-                out.write(get_data_from_record(page_data[cursor:cursor+record_size]) + '\n')
+                sub_ans = get_data_from_record(page_data[cursor:cursor+record_size])
+                sub_key = sub_ans.split(" ")[pk-1]
+                print("sub key is: ",sub_key)
+                outputs.append([sub_key,sub_ans])
             cursor += record_size
         infor.close()
+    out = open(output_file_name, "a")
+    outputs.sort()
+    for o in outputs:
+        out.write(o[1]+"\n")
     out.close()
+
 
 def update_record(inp):
     table_name = inp[2]
     pk = inp[3]
-    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer())
+    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(),order = 50)
     storage = tree.get(str(pk)).decode("utf-8")[1:].split(",")
     infor = open(storage[0], "rb+")
     infor.seek(int(storage[1]) + record_header_size)
@@ -176,7 +186,7 @@ def update_record(inp):
 def search_record(inp, output_file_name):
     table_name = inp[2]
     pk = inp[3]
-    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer())
+    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(), order = 50)
     storage = tree.get(str(pk)).decode("utf-8")[1:].split(",")
     tree.close()
 
@@ -195,20 +205,16 @@ def filter_record(inp, output_file_name):
     pk = inp[3]
     cond = inp[4]
     operand = inp[5]
-    pk_real = get_primary_key(table_name)
+    outputs = []
 
-    # swap pk and operand if they are not in order
-    if pk != pk_real and pk_real == operand:
-        tmp = pk
-        pk = operand
-        operand = pk
-        if cond == '<':
-            cond = '>'
-        elif cond == '>':
-            cond = '<'
-    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer())
+    pk_type = get_primary_key_type(table_name)
+    print("pk type is: ", pk_type)
+    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(), order = 50)
     for key, value in tree.items():
         _key = key
+        if pk_type == "int":
+            operand = int(operand)
+            _key = int(_key)
         holds = False
         if cond == '<' and _key < operand:
             holds = True
@@ -220,20 +226,26 @@ def filter_record(inp, output_file_name):
             _value = value[1:]
             storage = _value.decode("utf-8").split(",")
             infor = open(storage[0], "rb+")
-            out = open(output_file_name, "a")
+
             infor.seek(int(storage[1]))
             data = infor.read(record_size).decode("ascii")
             infor.close()
-            out.write(get_data_from_record(data) + "\n")
+            outputs.append([_key, get_data_from_record(data)])
     tree.close()
+    out = open(output_file_name, "a")
+    outputs.sort()
+    for i in range(len(outputs)):
+        out.write(outputs[i][1] + "\n")
+    out.close()
 
 def delete_record(inp):
     table_name = inp[2]
     pk = inp[3]
-    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer())
+    tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(), order = 50)
     is_alive = tree.get(pk)[0]
     storage = tree.get(pk).decode("utf-8")[1:].split(",")
     tree[pk] = "0".encode("ascii")
+    tree.close()
     infor = open(storage[0], "rb+")
     infor.seek(int(storage[1]))
     infor.write("0".encode("ascii"))
@@ -244,7 +256,3 @@ def delete_record(inp):
     infor.write(str(no_active_records).zfill(2).encode("ascii"))
     infor.close()
     check_empty(storage[0])
-
-
-
-
