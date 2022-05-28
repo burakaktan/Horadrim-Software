@@ -55,7 +55,6 @@ if __name__ == '__main__':
         infor.close()
 
     for _inp in input_lines:
-        print("executing:", _inp)
         inp = _inp.split()
         # if query is DDL
         if inp[1] == 'type':
