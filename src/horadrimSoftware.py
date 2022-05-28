@@ -10,8 +10,6 @@ import os
 import sys
 import time
 
-from src.dml import filter_record
-
 def get_ocurrence():
     return int(time.time())
 
