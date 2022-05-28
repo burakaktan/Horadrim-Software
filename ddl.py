@@ -1,5 +1,6 @@
 from horadrimSoftware import *
 from dml import *
+import os
 
 max_field_number = 12
 max_field_name_length = 20
@@ -42,14 +43,11 @@ def create_type(inp):
     infor = open(f"information_schema.txt", "rb+")
     current_page = 0
     while not written:
-        print("hey")
         data = infor.read(4)[-2:].decode("ascii")
         if data == '':
-            print("add new page")
             add_new_page_to_information_schema(infor)
             continue
         no_filled = int(data)
-        print("number of filled:", no_filled)
         if no_filled == catalog_page_record_number:
             infor.read(catalog_page_size - 4).decode("ascii")
         else:
@@ -112,7 +110,6 @@ def delete_type(inp):
         cursor = catalog_page_header_size
         for i in range(catalog_page_record_number):
             if data[cursor] == '1' and data[(cursor + 1): (cursor + 1 + max_table_name_length)] == name_extended:
-                print("tell is:", infor.tell())
                 infor.seek(infor.tell() - catalog_page_size
                            + catalog_page_header_size + i*catalog_record_size)
                 infor.write("0".encode("ascii"))
@@ -120,6 +117,16 @@ def delete_type(inp):
                 break
             cursor += catalog_record_size
     infor.close()
+    all_files = os.listdir(".")
+    related_files = []
+    for file in all_files:
+        if ".txt" in file and file.find(name+"_") == 0:
+            related_files.append(file)
+        if file.find("bp_"+name+".txt") != -1:
+            related_files.append(file)
+    return related_files
+    for filename in related_files:
+        os.remove(filename)
 
 
 def get_primary_key(table_name):
