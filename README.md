@@ -54,3 +54,6 @@ Format: update record {table_name} {primary_key} {field_1_value} ...... {field_n
 #### List Records
 
 Format: list record {table_name}
+
+## Note
+As intended, data is stored in disk, therefore if user creates some records and doesn't delete them, they will appear on next runs.
