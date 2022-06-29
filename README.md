@@ -45,7 +45,7 @@ Format: search record {table_name} {primary_key}
 
 Format: filter record {table_name} {condition}
 
-Contition format: {primary key} {logical operation} {value} 
+Condition format: {primary key} {logical operation} {value} 
  
 #### Update Record
 
