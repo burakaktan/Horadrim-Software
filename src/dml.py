@@ -17,6 +17,14 @@ record_body_size = max_field_number * max_field_length
 record_size = record_body_size + record_header_size
 page_size = page_header_size + records_per_page * record_size
 
+catalog_page_header_size = 2 + 2 + 4 # record_number + active_record_number + total_size
+catalog_page_record_number = 8
+catalog_record_header_size = 1 + max_table_name_length + 2 # valid_bit + table_name + primary_key
+catalog_record_body_size = max_field_number*(max_field_name_length+3) # number of fields*(field_size + type_size)
+catalog_record_size = catalog_record_header_size + catalog_record_body_size
+catalog_page_size = catalog_page_header_size \
+                    + catalog_page_record_number*(catalog_record_header_size + catalog_record_body_size)
+
 
 def extend_to(l, s):
     return s + (l - len(s)) * '$'
@@ -231,27 +239,29 @@ def filter_record(inp, output_file_name):
 
         pk_type = get_primary_key_type(table_name)
         tree = BPlusTree("./bp_"+table_name+".txt", key_size=20, serializer=StrSerializer(), order = 50)
-        for key, value in tree.items():
-            _key = key
-            if pk_type == "int":
-                operand = int(operand)
-                _key = int(_key)
-            holds = False
-            if cond == '<' and _key < operand:
-                holds = True
-            if cond == '>' and _key > operand:
-                holds = True
-            if cond == '=' and _key == operand:
-                holds = True
-            if holds:
-                _value = value[1:]
-                storage = _value.decode("utf-8").split(",")
-                infor = open(storage[0], "rb+")
-
-                infor.seek(int(storage[1]))
-                data = infor.read(record_size).decode("ascii")
-                infor.close()
-                outputs.append([_key, get_data_from_record(data)])
+        try:
+            for key, value in tree.items():
+                _key = key
+                if pk_type == "int":
+                    operand = int(operand)
+                    _key = int(_key)
+                holds = False
+                if cond == '<' and _key < operand:
+                    holds = True
+                if cond == '>' and _key > operand:
+                    holds = True
+                if cond == '=' and _key == operand:
+                    holds = True
+                if holds:
+                    _value = value[1:]
+                    storage = _value.decode("utf-8").split(",")
+                    infor = open(storage[0], "rb+")
+                    infor.seek(int(storage[1]))
+                    data = infor.read(record_size).decode("ascii")
+                    infor.close()
+                    outputs.append([_key, get_data_from_record(data)])
+        except:
+            pass
         tree.close()
         out = open(output_file_name, "a")
         outputs.sort()
@@ -274,7 +284,7 @@ def delete_record(inp):
             tree.close()
             return False
         is_alive = tree.get(pk).decode("utf-8")[0]
-        if not is_alive:
+        if int(is_alive) == 0:
             tree.close()
             return False
         storage = tree.get(pk).decode("utf-8")[1:].split(",")
@@ -296,5 +306,40 @@ def delete_record(inp):
         return False
 
 
+def get_primary_key(table_name):
+    infor = open("information_schema.txt", "rb+")
+    while True:
+        data = infor.read(catalog_page_size).decode("ascii")
+        if len(data) == 0:
+            break
+        cursor = catalog_page_header_size
+        for i in range(catalog_page_record_number):
+            # if valid bit is 1 and table is the table we search
+            if data[cursor] == '1' and table_name == remove_dollar(data[(cursor+1):(cursor+1+max_table_name_length)]):
+                infor.close()
+                return int(data[cursor+1+max_table_name_length:cursor+1+max_table_name_length+2])
+            cursor += catalog_record_size
+    infor.close()
+    return -1
+
+def get_primary_key_type(table_name):
+    infor = open("information_schema.txt", "rb+")
+    while True:
+        data = infor.read(catalog_page_size).decode("ascii")
+        if len(data) == 0:
+            break
+        cursor = catalog_page_header_size
+        for i in range(catalog_page_record_number):
+            # if valid bit is 1 and table is the table we search
+            if data[cursor] == '1' and table_name == remove_dollar(data[(cursor+1):(cursor+1+max_table_name_length)]):
+                infor.close()
+                cursor += 21
+                place = int(data[cursor:cursor+2]) - 1
+                cursor += 2
+                cursor += 23*place+20
+                return data[cursor:cursor+3]
+            cursor += catalog_record_size
+    infor.close()
+    return -1
 
 

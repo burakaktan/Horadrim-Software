@@ -50,9 +50,7 @@ if __name__ == '__main__':
     input_lines = input_file.readlines()
     # create information_schema table if not exist
     if not os.path.exists('information_schema.txt'):
-        infor = open(f"information_schema.txt", "wb+")
-        add_new_page_to_information_schema(infor)
-        infor.close()
+        add_new_page_to_information_schema()
 
     for _inp in input_lines:
         inp = _inp.split()

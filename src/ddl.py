@@ -1,6 +1,7 @@
 from horadrimSoftware import *
-from dml import *
 import os
+from bplustree import BPlusTree
+from bplustree import StrSerializer
 
 max_field_number = 12
 max_field_name_length = 20
@@ -27,10 +28,12 @@ def remove_dollar(s):
     return ns
 
 
-def add_new_page_to_information_schema(infor):
+def add_new_page_to_information_schema():
+    infor = open(f"information_schema.txt", "ab+")
     infor.write((str(catalog_page_record_number).zfill(2) + "00" + str(catalog_page_size)).encode("ascii"))
     for j in range(8):
         infor.write(("0" + (catalog_record_size-1)*'$').encode("ascii"))
+    infor.close()
 
 
 def create_type(inp):
@@ -52,7 +55,7 @@ def create_type(inp):
         while not written:
             data = infor.read(4)[-2:].decode("ascii")
             if data == '':
-                add_new_page_to_information_schema(infor)
+                add_new_page_to_information_schema()
                 continue
             no_filled = int(data)
             if no_filled == catalog_page_record_number:
@@ -133,7 +136,7 @@ def delete_type(inp):
             for i in range(catalog_page_record_number):
                 if data[cursor] == '1' and data[(cursor + 1): (cursor + 1 + max_table_name_length)] == name_extended:
                     infor.seek(infor.tell() - catalog_page_size
-                               + catalog_page_header_size + i*catalog_record_size)
+                            + catalog_page_header_size + i*catalog_record_size)
                     infor.write("0".encode("ascii"))
                     var = False
                     break
