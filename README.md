@@ -17,7 +17,7 @@ There are two types of commands: DDL commands and DML commands.
 
 ### DDL Commands
 
-#### Create Type
+#### Creating a Table
 create type {type_name} {number_of_fields} {primary_key_index} {field_1_name} {field_1_type} ........ {field_n_name} {field_n_type}
 
 To be continued...
