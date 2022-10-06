@@ -1,5 +1,5 @@
 # Horadrim Software
-A simple database management system
+A simple database management system. B+ tree indexing on primary key is used to perform faster queries.
 
 ## How to run?
 
@@ -56,5 +56,4 @@ Format: update record {table_name} {primary_key} {field_1_value} ...... {field_n
 Format: list record {table_name}
 
 ## Note
-As intended, data is stored in disk, therefore if user creates some records and doesn't delete them, they will appear on next runs.
 Join operations, multiple users, authentication/authorization mechanisms, encryption aren't implemented for sake of simplicity
