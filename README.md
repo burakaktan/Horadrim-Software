@@ -57,3 +57,4 @@ Format: list record {table_name}
 
 ## Note
 As intended, data is stored in disk, therefore if user creates some records and doesn't delete them, they will appear on next runs.
+Join operations, multiple users, authentication/authorization mechanisms, encryption aren't implemented for sake of simplicity
