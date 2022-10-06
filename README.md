@@ -1,5 +1,5 @@
 # Horadrim Software
-A basic database management system
+A simple database management system
 
 ## How to run?
 
